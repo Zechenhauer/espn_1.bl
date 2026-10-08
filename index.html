@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚽ 1. Bundesliga Live Dashboard & Spieltage</title>
-    <!-- Tailwind CSS CDN -->
+    <link rel="icon" type="image/png" href="https://lhusylpjnujlqomougmg.supabase.co/storage/v1/object/public/vereinslogos/bundesliga-2002-2010-logo.png">
+    <link rel="apple-touch-icon" href="https://lhusylpjnujlqomougmg.supabase.co/storage/v1/object/public/vereinslogos/bundesliga-2002-2010-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #070f26; color: #f1f5f9; }
@@ -23,7 +24,6 @@
 
     <div class="max-w-[95rem] mx-auto space-y-6">
         
-        <!-- HEADER -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-blue-900/60 pb-4 gap-4">
             <div>
                 <h1 class="text-3xl font-black text-cyan-400 tracking-wide flex items-center gap-2 drop-shadow-sm">
@@ -38,12 +38,10 @@
                     LIVE SPIEL LÄUFT (Auto-Update 15s)
                 </div>
                 
-                <!-- Spieltag Filter -->
                 <div class="flex items-center gap-2 bg-blue-950 border border-blue-800 px-3 py-1.5 rounded-lg shadow-inner">
                     <span class="text-xs text-blue-300 font-semibold">📅 Spieltag:</span>
                     <select id="matchweek-select" onchange="loadSelectedMatchweek()" class="bg-transparent text-cyan-400 font-bold text-sm focus:outline-none">
-                        <!-- Dynamisch gefüllt für alle 34 Spieltage -->
-                    </select>
+                        </select>
                 </div>
 
                 <button onclick="refreshAllData()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-lg shadow transition flex items-center gap-2 border border-blue-400/30">
@@ -52,7 +50,6 @@
             </div>
         </div>
 
-        <!-- TAB NAVIGATION -->
         <div class="flex border-b border-blue-900/60 space-x-2">
             <button id="tab-btn-games" onclick="switchTab('games')" class="px-5 py-2.5 font-bold text-sm rounded-t-xl bg-blue-900/80 text-cyan-300 border-t-2 border-cyan-400 transition shadow-lg">
                 ⚽ Spieltag-Ergebnisse
@@ -62,7 +59,6 @@
             </button>
         </div>
 
-        <!-- TAB 1: SPIELE & LIVE SCORES -->
         <div id="tab-content-games" class="space-y-6">
             <div id="games-container" class="space-y-8">
                 <div class="text-center py-12 text-slate-400 animate-pulse">
@@ -71,7 +67,6 @@
             </div>
         </div>
 
-        <!-- TAB 2: TABELLE -->
         <div id="tab-content-standings" class="hidden space-y-8">
             <div class="bg-blue-950/40 p-6 rounded-2xl border border-blue-900/60 shadow-xl space-y-4 backdrop-blur-sm">
                 <div class="flex justify-between items-center border-b border-blue-900/60 pb-3">
@@ -108,7 +103,6 @@
 
     </div>
 
-    <!-- JAVASCRIPT LOGIK -->
     <script>
         let bundesligaEvents = [];
         let autoRefreshTimer = null;
@@ -307,7 +301,6 @@
                         </div>
 
                         <div class="space-y-3">
-                            <!-- HEIMTEAM -->
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center gap-3">
                                     <img src="${home?.team?.logo || ''}" class="w-8 h-8 object-contain filter drop-shadow" alt="Logo">
@@ -318,7 +311,6 @@
                                 </span>
                             </div>
 
-                            <!-- AUSWÄRTSTEAM -->
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center gap-3">
                                     <img src="${away?.team?.logo || ''}" class="w-8 h-8 object-contain filter drop-shadow" alt="Logo">
