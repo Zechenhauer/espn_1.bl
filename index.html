@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚽ 1. Bundesliga Live Dashboard & Spieltage</title>
-    <link rel="icon" type="image/png" href="https://lhusylpjnujlqomougmg.supabase.co/storage/v1/object/public/vereinslogos/bundesliga-2002-2010-logo.png">
-    <link rel="apple-touch-icon" href="https://lhusylpjnujlqomougmg.supabase.co/storage/v1/object/public/vereinslogos/bundesliga-2002-2010-logo.png">
+    
+    <!-- Perfektes SVG App-Icon für iPhone & Android direkt im Code -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23070f26%22/><text x=%2250%22 y=%2265%22 font-size=%2255%22 text-anchor=%22middle%22>⚽</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23070f26%22/><text x=%2250%22 y=%2265%22 font-size=%2255%22 text-anchor=%22middle%22>⚽</text></svg>">
+
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #070f26; color: #f1f5f9; }
@@ -24,12 +28,13 @@
 
     <div class="max-w-[95rem] mx-auto space-y-6">
         
+        <!-- HEADER -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-blue-900/60 pb-4 gap-4">
             <div>
                 <h1 class="text-3xl font-black text-cyan-400 tracking-wide flex items-center gap-2 drop-shadow-sm">
                     🦅 1. BUNDESLIGA DASHBOARD & SPIELTAGE
                 </h1>
-                <p class="text-slate-400 text-sm mt-1">Saison 2026/27 • Spieltage, Live-Scores & Tabelle via ESPN API</p>
+                <p class="text-slate-400 text-sm mt-1">Saison 2026/27 • Live-Scores & Tabelle via ESPN API</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-3">
@@ -38,10 +43,19 @@
                     LIVE SPIEL LÄUFT (Auto-Update 15s)
                 </div>
                 
+                <!-- Zeitraum / Modus Auswahl -->
                 <div class="flex items-center gap-2 bg-blue-950 border border-blue-800 px-3 py-1.5 rounded-lg shadow-inner">
-                    <span class="text-xs text-blue-300 font-semibold">📅 Spieltag:</span>
-                    <select id="matchweek-select" onchange="loadSelectedMatchweek()" class="bg-transparent text-cyan-400 font-bold text-sm focus:outline-none">
-                        </select>
+                    <span class="text-xs text-blue-300 font-semibold">📅 Zeitraum:</span>
+                    <select id="timeframe-select" onchange="onTimeframeChange()" class="bg-transparent text-cyan-400 font-bold text-sm focus:outline-none cursor-pointer">
+                        <option value="next7" selected>📅 Nächste 7 Tage</option>
+                        <option value="prev7">⏮️ Vergangene 7 Tage</option>
+                        <option value="single">📆 Einzelnes Datum...</option>
+                    </select>
+                </div>
+
+                <!-- Dynamisches Datumsfeld -->
+                <div id="single-date-wrapper" class="hidden items-center gap-2 bg-blue-950 border border-blue-800 px-3 py-1 rounded-lg shadow-inner">
+                    <input type="date" id="single-date-input" onchange="loadLeagueGames()" class="bg-transparent text-cyan-400 font-bold text-sm focus:outline-none cursor-pointer">
                 </div>
 
                 <button onclick="refreshAllData()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-lg shadow transition flex items-center gap-2 border border-blue-400/30">
@@ -50,23 +64,26 @@
             </div>
         </div>
 
+        <!-- TAB NAVIGATION -->
         <div class="flex border-b border-blue-900/60 space-x-2">
             <button id="tab-btn-games" onclick="switchTab('games')" class="px-5 py-2.5 font-bold text-sm rounded-t-xl bg-blue-900/80 text-cyan-300 border-t-2 border-cyan-400 transition shadow-lg">
-                ⚽ Spieltag-Ergebnisse
+                ⚽ 1. Bundesliga Spielplan
             </button>
             <button id="tab-btn-standings" onclick="switchTab('standings')" class="px-5 py-2.5 font-bold text-sm rounded-t-xl bg-blue-950/40 text-slate-400 hover:text-white transition">
                 📊 1. Bundesliga Tabelle
             </button>
         </div>
 
+        <!-- TAB 1: SPIELE & LIVE SCORES -->
         <div id="tab-content-games" class="space-y-6">
             <div id="games-container" class="space-y-8">
                 <div class="text-center py-12 text-slate-400 animate-pulse">
-                    ⌛ Lade Spieltag von ESPN...
+                    ⌛ Lade 1. Bundesliga Spiele von ESPN...
                 </div>
             </div>
         </div>
 
+        <!-- TAB 2: TABELLE -->
         <div id="tab-content-standings" class="hidden space-y-8">
             <div class="bg-blue-950/40 p-6 rounded-2xl border border-blue-900/60 shadow-xl space-y-4 backdrop-blur-sm">
                 <div class="flex justify-between items-center border-b border-blue-900/60 pb-3">
@@ -103,34 +120,10 @@
 
     </div>
 
+    <!-- JAVASCRIPT LOGIK -->
     <script>
-        let bundesligaEvents = [];
+        let leagueEvents = [];
         let autoRefreshTimer = null;
-        let currentMatchweek = 5; // Startet standardmäßig auf dem aktuellen 5. Spieltag
-
-        // Exakte Startdaten (Freitage) für alle 34 Spieltage der Saison 2026/27
-        const MATCHWEEK_START_DATES = {
-            1: "20260821", 2: "20260828", 3: "20260904", 4: "20260911", 5: "20261009",
-            6: "20261016", 7: "20261023", 8: "20261030", 9: "20261106", 10: "20261113",
-            11: "20261120", 12: "20261127", 13: "20261204", 14: "20261211", 15: "20261218",
-            16: "20261222", 17: "20260115", 18: "20260122", 19: "20260129", 20: "20260205",
-            21: "20260212", 22: "20260219", 23: "20260226", 24: "20260305", 25: "20260312",
-            26: "20260319", 27: "20260402", 28: "20260409", 29: "20260416", 30: "20260423",
-            31: "20260430", 32: "20260507", 33: "20260515", 34: "20260522"
-        };
-
-        function initMatchweekSelect() {
-            const select = document.getElementById("matchweek-select");
-            select.innerHTML = "";
-            
-            for (let i = 1; i <= 34; i++) {
-                const opt = document.createElement("option");
-                opt.value = i;
-                opt.textContent = `${i}. Spieltag`;
-                if (i === currentMatchweek) opt.selected = true;
-                select.appendChild(opt);
-            }
-        }
 
         function switchTab(tabName) {
             const tabs = ['games', 'standings'];
@@ -147,22 +140,26 @@
             });
         }
 
+        function onTimeframeChange() {
+            const mode = document.getElementById("timeframe-select").value;
+            const dateWrapper = document.getElementById("single-date-wrapper");
+
+            if (mode === 'single') {
+                dateWrapper.classList.remove("hidden");
+                dateWrapper.classList.add("flex");
+                if (!document.getElementById("single-date-input").value) {
+                    document.getElementById("single-date-input").value = new Date().toISOString().split('T')[0];
+                }
+            } else {
+                dateWrapper.classList.add("hidden");
+                dateWrapper.classList.remove("flex");
+            }
+            loadLeagueGames();
+        }
+
         async function refreshAllData() {
-            loadSelectedMatchweek();
-            await loadBundesligaStandings();
-        }
-
-        function loadSelectedMatchweek() {
-            const select = document.getElementById("matchweek-select");
-            currentMatchweek = parseInt(select.value);
-            loadMatchweekGames(currentMatchweek);
-        }
-
-        function parseEspnDate(dateStr) {
-            const y = parseInt(dateStr.substring(0, 4));
-            const m = parseInt(dateStr.substring(4, 6)) - 1;
-            const d = parseInt(dateStr.substring(6, 8));
-            return new Date(y, m, d);
+            loadLeagueGames();
+            await loadStandings();
         }
 
         function formatDateKey(dateObj) {
@@ -172,18 +169,33 @@
             return `${y}${m}${d}`;
         }
 
-        async function loadMatchweekGames(weekNum) {
+        async function loadLeagueGames() {
             const container = document.getElementById("games-container");
-            container.innerHTML = `<div class="text-center py-12 text-slate-400 animate-pulse">⌛ Lade ${weekNum}. Spieltag von ESPN...</div>`;
+            container.innerHTML = `<div class="text-center py-12 text-slate-400 animate-pulse">⌛ Lade 1. Bundesliga Spiele von ESPN...</div>`;
 
-            const startBaseStr = MATCHWEEK_START_DATES[weekNum] || "20261009";
-            const startDateObj = parseEspnDate(startBaseStr);
+            const mode = document.getElementById("timeframe-select").value;
+            let datesToFetch = [];
+            let baseDate = new Date();
 
-            const datesToFetch = [];
-            for (let i = 0; i < 4; i++) { // Freitag bis Montag
-                const d = new Date(startDateObj);
-                d.setDate(startDateObj.getDate() + i);
-                datesToFetch.push(formatDateKey(d));
+            if (mode === 'next7') {
+                for (let i = 0; i < 7; i++) {
+                    let d = new Date(baseDate);
+                    d.setDate(baseDate.getDate() + i);
+                    datesToFetch.push(formatDateKey(d));
+                }
+            } else if (mode === 'prev7') {
+                for (let i = 6; i >= 0; i--) {
+                    let d = new Date(baseDate);
+                    d.setDate(baseDate.getDate() - i);
+                    datesToFetch.push(formatDateKey(d));
+                }
+            } else if (mode === 'single') {
+                const val = document.getElementById("single-date-input").value;
+                if (val) {
+                    datesToFetch.push(val.replace(/-/g, ''));
+                } else {
+                    datesToFetch.push(formatDateKey(baseDate));
+                }
             }
 
             try {
@@ -195,25 +207,24 @@
                 );
 
                 const results = await Promise.all(promises);
-                
                 const eventMap = {};
                 results.flat().forEach(e => {
                     if (e && e.id) eventMap[e.id] = e;
                 });
 
-                bundesligaEvents = Object.values(eventMap);
-                bundesligaEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+                leagueEvents = Object.values(eventMap);
+                leagueEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
 
                 checkLiveState();
-                renderGroupedGames(weekNum);
+                renderGroupedGames();
             } catch (error) {
-                console.error("Fehler beim Abrufen des Spieltags:", error);
+                console.error("Fehler beim Abrufen der Spieldaten:", error);
                 container.innerHTML = '<div class="text-center py-8 text-rose-400">⚠️ Fehler beim Laden der Spieldaten.</div>';
             }
         }
 
         function checkLiveState() {
-            const isLive = bundesligaEvents.some(e => e.status?.type?.state === "in");
+            const isLive = leagueEvents.some(e => e.status?.type?.state === "in");
             const liveIndicator = document.getElementById("live-indicator");
 
             if (isLive) {
@@ -232,18 +243,18 @@
             }
         }
 
-        function renderGroupedGames(weekNum) {
+        function renderGroupedGames() {
             const container = document.getElementById("games-container");
             container.innerHTML = "";
 
-            if (bundesligaEvents.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-slate-500">Für den ${weekNum}. Spieltag sind noch keine Spieldaten in ESPN hinterlegt.</div>`;
+            if (leagueEvents.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-500">Für diesen Zeitraum sind keine 1. Bundesliga Spiele hinterlegt.</div>`;
                 return;
             }
 
             const groupedMap = {};
 
-            bundesligaEvents.forEach(event => {
+            leagueEvents.forEach(event => {
                 const gameDate = new Date(event.date);
                 const dateKey = gameDate.toLocaleDateString("de-DE", { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
                 
@@ -301,6 +312,7 @@
                         </div>
 
                         <div class="space-y-3">
+                            <!-- HEIMTEAM -->
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center gap-3">
                                     <img src="${home?.team?.logo || ''}" class="w-8 h-8 object-contain filter drop-shadow" alt="Logo">
@@ -311,6 +323,7 @@
                                 </span>
                             </div>
 
+                            <!-- AUSWÄRTSTEAM -->
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center gap-3">
                                     <img src="${away?.team?.logo || ''}" class="w-8 h-8 object-contain filter drop-shadow" alt="Logo">
@@ -327,7 +340,7 @@
             });
         }
 
-        async function loadBundesligaStandings() {
+        async function loadStandings() {
             const url = "https://site.api.espn.com/apis/v2/sports/soccer/ger.1/standings";
             const tbody = document.getElementById("table-body");
 
@@ -395,9 +408,8 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            initMatchweekSelect();
-            loadSelectedMatchweek();
-            loadBundesligaStandings();
+            loadLeagueGames();
+            loadStandings();
         });
     </script>
 </body>
